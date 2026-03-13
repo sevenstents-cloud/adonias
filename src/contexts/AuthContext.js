@@ -17,15 +17,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchProfile = async (userId) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+        
+      if (data) setRole(data.role);
+      else setRole('OPERACIONAL');
+      
+      setLoading(false);
+    };
+
     // Pegar a sessão inicial
     const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       if (session?.user) {
-        // Exemplo: pegando a role dos metadados ou através de uma requisição a uma tabela de perfis
-        setRole(session.user.user_metadata?.role || 'OPERACIONAL');
+        await fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchSession();
@@ -34,11 +47,11 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        setRole(session.user.user_metadata?.role || 'OPERACIONAL');
+        fetchProfile(session.user.id);
       } else {
         setRole(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {

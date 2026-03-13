@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -8,16 +9,53 @@ import { Select } from '@/components/ui/Select';
 import { SlideOver } from '@/components/ui/SlideOver';
 import { Search, Plus, Filter, Download } from 'lucide-react';
 
-const transacoes = [
-  { id: '1', descricao: 'Compra de Perfis de Alumínio', categoria: 'Material', obra: 'Residência Alphaville', tipo: 'despesa', valor: 15400, data: '12/03/2026', status: 'Pago' },
-  { id: '2', descricao: 'Sinal de Contrato - Vidros', categoria: 'Venda', obra: 'Residência Alphaville', tipo: 'receita', valor: 35000, data: '10/03/2026', status: 'Recebido' },
-  { id: '3', descricao: 'Energia Elétrica', categoria: 'Despesa Fixa', obra: '-', tipo: 'despesa', valor: 450, data: '15/03/2026', status: 'Pendente' },
-  { id: '4', descricao: 'Pagamento Mão de Obra', categoria: 'Mão de Obra', obra: 'Edifício Comercial Center', tipo: 'despesa', valor: 12000, data: '20/03/2026', status: 'Pendente' },
-  { id: '5', descricao: 'Parcela 2 - Instalação', categoria: 'Venda', obra: 'Edifício Comercial Center', tipo: 'receita', valor: 50000, data: '05/04/2026', status: 'A Receber' },
-];
 
 export default function LancamentosPage() {
   const [slideOpen, setSlideOpen] = useState(false);
+  const [transacoes, setTransacoes] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [centrosCusto, setCentrosCusto] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      // Transacoes
+      const { data: transData } = await supabase
+        .from('transactions')
+        .select(`
+          id, description, amount, type, status, due_date,
+          categories (name),
+          cost_centers (name)
+        `)
+        .order('due_date', { ascending: false });
+
+      if (transData) {
+        const formatted = transData.map(t => ({
+          id: t.id,
+          descricao: t.description,
+          categoria: t.categories?.name || 'Sem categoria',
+          obra: t.cost_centers?.name || '-',
+          tipo: t.type?.toLowerCase() || 'despesa',
+          valor: t.amount,
+          data: t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR') : '-',
+          status: t.status === 'PENDENTE' ? 'Pendente' : 
+                  t.status === 'PAGO' ? 'Pago' : 
+                  t.status === 'RECEBIDO' ? 'Recebido' : 'Cancelado'
+        }));
+        setTransacoes(formatted);
+      }
+
+      // Form lookups
+      const { data: catData } = await supabase.from('categories').select('id, name');
+      if (catData) setCategorias(catData);
+
+      const { data: costData } = await supabase.from('cost_centers').select('id, name');
+      if (costData) setCentrosCusto(costData);
+
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -151,20 +189,21 @@ export default function LancamentosPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Categoria</label>
-            <Select>
-              <option>Material Operacional</option>
-              <option>Mão de Obra</option>
-              <option>Despesa Fixa (Escritório)</option>
-              <option>Receita de Venda/Contrato</option>
+            <Select required>
+              <option value="">Selecione uma categoria...</option>
+              {categorias.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </Select>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Obra / Centro de Custo (Opcional)</label>
-            <Select>
-              <option value="">Geral</option>
-              <option>Residência Alphaville - Lote 14</option>
-              <option>Edifício Comercial Center</option>
+            <label className="text-sm font-medium text-slate-700">Obra / Centro de Custo</label>
+            <Select required>
+              <option value="">Selecione um centro de custo...</option>
+              {centrosCusto.map(cc => (
+                <option key={cc.id} value={cc.id}>{cc.name}</option>
+              ))}
             </Select>
           </div>
           

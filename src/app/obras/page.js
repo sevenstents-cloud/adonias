@@ -1,20 +1,42 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { supabase } from '@/lib/supabaseClient';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Briefcase, Search, Plus } from 'lucide-react';
 
-const obras = [
-  { id: '1', nome: 'Residência Alphaville - Lote 14', cliente: 'João Silva', dataInicio: '10/01/2026', status: 'Em Andamento', valor: 85000 },
-  { id: '2', nome: 'Edifício Comercial Center', cliente: 'Construtora ABC', dataInicio: '05/02/2026', status: 'Planejamento', valor: 240000 },
-  { id: '3', nome: 'Reforma Apto 402', cliente: 'Maria Oliveira', dataInicio: '20/02/2026', status: 'Atrasado', valor: 15500 },
-  { id: '4', nome: 'Galpão Logístico', cliente: 'Logística SA', dataInicio: '01/11/2025', status: 'Concluído', valor: 120000 },
-];
-
 export default function ObrasPage() {
+  const [obras, setObras] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchObras() {
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          id, client_name, start_date, status, contract_value,
+          cost_centers (name)
+        `);
+        
+      if (!error && data) {
+        const formatted = data.map(p => ({
+          id: p.id,
+          nome: p.cost_centers?.name || 'Obra sem nome',
+          cliente: p.client_name,
+          dataInicio: p.start_date ? new Date(p.start_date).toLocaleDateString('pt-BR') : '-',
+          status: p.status === 'EM_ANDAMENTO' ? 'Em Andamento' : p.status,
+          valor: p.contract_value || 0
+        }));
+        setObras(formatted);
+      }
+      setLoading(false);
+    }
+    fetchObras();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
