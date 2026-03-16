@@ -45,7 +45,7 @@ export default function LancamentosPage() {
         id: t.id,
         descricao: t.description,
         categoria: t.categories?.name || 'Sem categoria',
-        obra: t.cost_centers?.name || '-',
+        grupo: t.cost_centers?.name || '-',
         tipo: t.type?.toLowerCase() || 'despesa',
         valor: t.amount,
         data: t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR') : '-',
@@ -111,7 +111,7 @@ export default function LancamentosPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Lançamentos</h1>
-          <p className="text-slate-500 mt-1">Contas a pagar, contas a receber e fluxo de caixa.</p>
+          <p className="text-slate-500 mt-1">Controle suas entradas e saídas financeiras.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export default function LancamentosPage() {
                 <tr>
                   <th className="px-6 py-4 font-medium">Data</th>
                   <th className="px-6 py-4 font-medium">Descrição</th>
-                  <th className="px-6 py-4 font-medium">Obra / Centro de Custo</th>
+                  <th className="px-6 py-4 font-medium">Grupo / Projeto</th>
                   <th className="px-6 py-4 font-medium text-center">Status</th>
                   <th className="px-6 py-4 font-medium text-right">Valor</th>
                 </tr>
@@ -180,7 +180,7 @@ export default function LancamentosPage() {
                       <p className="font-medium text-slate-900">{t.descricao}</p>
                       <p className="text-xs text-slate-500">{t.categoria}</p>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{t.obra}</td>
+                    <td className="px-6 py-4 text-slate-600">{t.grupo}</td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         t.status === 'Pago' || t.status === 'Recebido' ? 'bg-emerald-100 text-emerald-700' :
@@ -222,7 +222,7 @@ export default function LancamentosPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Descrição</label>
-            <Input required name="description" value={formData.description} onChange={handleChange} placeholder="Ex: Compra de Vidros Temperados" />
+            <Input required name="description" value={formData.description} onChange={handleChange} placeholder="Ex: Mercado mensal" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -247,9 +247,9 @@ export default function LancamentosPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Obra / Centro de Custo</label>
+            <label className="text-sm font-medium text-slate-700">Grupo / Projeto</label>
             <Select required name="cost_center_id" value={formData.cost_center_id} onChange={handleChange}>
-              <option value="">Selecione um centro de custo...</option>
+              <option value="">Selecione um grupo...</option>
               {centrosCusto.map(cc => (
                 <option key={cc.id} value={cc.id}>{cc.name}</option>
               ))}

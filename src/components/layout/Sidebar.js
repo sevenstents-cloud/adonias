@@ -4,22 +4,21 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  LayoutDashboard, 
-  Briefcase, 
+  PiggyBank,
   Wallet, 
   Settings, 
   LogOut,
   Users,
-  FolderKanban
+  FolderKanban,
+  LayoutDashboard
 } from 'lucide-react';
 import { cn } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Obras & Projetos', href: '/obras', icon: Briefcase },
   { name: 'Lançamentos', href: '/lancamentos', icon: Wallet },
-  { name: 'Cadastros', href: '/admin/gestao', icon: FolderKanban, adminOnly: false, financeiroOk: true },
+  { name: 'Cadastros', href: '/admin/gestao', icon: FolderKanban },
   { name: 'Usuários', href: '/admin/users', icon: Users, adminOnly: true },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ];
@@ -37,8 +36,8 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col bg-slate-50 border-r border-slate-200">
       <div className="flex h-16 items-center px-6 border-b border-slate-200">
-        <LayoutDashboard className="h-6 w-6 text-zinc-900 mr-2" />
-        <span className="text-lg font-bold text-zinc-900 tracking-tight">Financeiro</span>
+        <PiggyBank className="h-6 w-6 text-zinc-900 mr-2" />
+        <span className="text-lg font-bold text-zinc-900 tracking-tight">Meu Bolso</span>
       </div>
       
       <div className="flex-1 overflow-y-auto py-4">

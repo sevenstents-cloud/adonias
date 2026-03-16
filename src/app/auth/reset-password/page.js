@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, PiggyBank } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -55,8 +55,8 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4">
       <div className="mb-8 flex items-center space-x-2 text-zinc-900">
-        <LayoutDashboard className="h-8 w-8" />
-        <h1 className="text-2xl font-semibold tracking-tight">Financeiro</h1>
+        <PiggyBank className="h-8 w-8" />
+        <h1 className="text-2xl font-semibold tracking-tight">Meu Bolso</h1>
       </div>
 
       <Card className="w-full max-w-sm">
@@ -117,7 +117,7 @@ export default function ResetPasswordPage() {
       </Card>
 
       <p className="mt-8 text-center text-sm text-slate-500">
-        Gestão de Esquadrias &copy; {new Date().getFullYear()}
+        Meu Bolso &copy; {new Date().getFullYear()}
       </p>
     </div>
   );

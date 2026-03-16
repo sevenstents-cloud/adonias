@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Gestão Financeira Esquadrias",
-  description: "Fluxo de caixa e gestão financeira",
+  title: 'Meu Bolso | Controle Financeiro Pessoal',
+  description: 'Gerencie suas receitas, despesas e orçamento pessoal com facilidade.',
 };
 
 export default function RootLayout({ children }) {

@@ -185,9 +185,9 @@ function CategoriasTab() {
 }
 
 // ─────────────────────────────────────────────
-// CENTROS DE CUSTO
+// GRUPOS DE GASTOS (Antigos Centros de Custo)
 // ─────────────────────────────────────────────
-function CentrosCustoTab() {
+function GruposTab() {
   const { role } = useAuth();
   const canEdit = role === 'ADMIN' || role === 'FINANCEIRO';
   const [centros, setCentros] = useState([]);
@@ -238,8 +238,8 @@ function CentrosCustoTab() {
   };
 
   const fields = [
-    { key: 'name', label: 'Nome do Centro de Custo', type: 'text' },
-    { key: 'type', label: 'Tipo', type: 'select', options: [{ value: 'GERAL', label: 'Geral / Interno' }, { value: 'OBRA', label: 'Obra' }] },
+    { key: 'name', label: 'Nome do Grupo', type: 'text' },
+    { key: 'type', label: 'Tipo', type: 'select', options: [{ value: 'GERAL', label: 'Grupo de Gastos' }, { value: 'OBRA', label: 'Projeto / Extra' }] },
     { key: 'description', label: 'Descrição (opcional)', type: 'text' },
   ];
 
@@ -247,12 +247,11 @@ function CentrosCustoTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-slate-600">
-          Centros de custo do tipo <strong>Geral</strong> são usados para despesas e receitas internas (administrativo, RH, etc).
-          Centros do tipo <strong>Obra</strong> são vinculados a projetos específicos.
+          Os <strong>Grupos</strong> permitem organizar seus gastos em categorias maiores (ex: Fixas, Variáveis, Lazer).
         </p>
         {canEdit && (
           <Button size="sm" onClick={() => { setShowAdd(true); setEditingId(null); }} className="flex items-center gap-2 ml-4 shrink-0">
-            <Plus className="h-4 w-4" /> Novo Centro
+            <Plus className="h-4 w-4" /> Novo Grupo
           </Button>
         )}
       </div>
@@ -294,7 +293,7 @@ function CentrosCustoTab() {
                   <td className="px-4 py-3 font-medium text-slate-900">{c.name}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.type === 'OBRA' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                      {c.type === 'OBRA' ? '🏗 Obra' : '🏢 Geral'}
+                      {c.type === 'OBRA' ? '🎯 Projeto' : '📁 Grupo'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{c.description || '—'}</td>
@@ -319,7 +318,7 @@ function CentrosCustoTab() {
               )
             ))}
             {!loading && centros.length === 0 && !showAdd && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Nenhum centro de custo cadastrado.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">Nenhum grupo cadastrado.</td></tr>
             )}
           </tbody>
         </table>
@@ -333,7 +332,7 @@ function CentrosCustoTab() {
 // ─────────────────────────────────────────────
 const TABS = [
   { id: 'categorias', label: 'Categorias', icon: Tag },
-  { id: 'centros', label: 'Centros de Custo', icon: Building2 },
+  { id: 'centros', label: 'Grupos', icon: Building2 },
 ];
 
 export default function GestaoCadastrosPage() {
@@ -342,8 +341,8 @@ export default function GestaoCadastrosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Cadastros Gerenciais</h1>
-        <p className="text-slate-500 mt-1">Gerencie as categorias e centros de custo utilizados nos lançamentos.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Configurações Gerenciais</h1>
+        <p className="text-slate-500 mt-1">Gerencie as categorias e grupos de gastos financeiros.</p>
       </div>
 
       <Card>
@@ -366,7 +365,7 @@ export default function GestaoCadastrosPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          {activeTab === 'categorias' ? <CategoriasTab /> : <CentrosCustoTab />}
+          {activeTab === 'categorias' ? <CategoriasTab /> : <GruposTab />}
         </CardContent>
       </Card>
     </div>
