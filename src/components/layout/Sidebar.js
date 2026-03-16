@@ -9,7 +9,8 @@ import {
   Wallet, 
   Settings, 
   LogOut,
-  Users
+  Users,
+  FolderKanban
 } from 'lucide-react';
 import { cn } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +19,8 @@ const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Obras & Projetos', href: '/obras', icon: Briefcase },
   { name: 'Lançamentos', href: '/lancamentos', icon: Wallet },
-  { name: 'Usuários', href: '/admin/users', icon: Users },
+  { name: 'Cadastros', href: '/admin/gestao', icon: FolderKanban, adminOnly: false, financeiroOk: true },
+  { name: 'Usuários', href: '/admin/users', icon: Users, adminOnly: true },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ];
 
@@ -42,6 +44,7 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-3">
           {navItems.map((item) => {
+            if (item.adminOnly && role !== 'ADMIN') return null;
             if (item.href === '/admin/users' && role !== 'ADMIN') return null;
             const isActive = pathname.startsWith(item.href);
             return (
