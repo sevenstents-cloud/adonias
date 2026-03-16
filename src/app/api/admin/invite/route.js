@@ -5,10 +5,11 @@ export async function POST(req) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ 
-      error: 'Configuração do servidor incompleta: SUPABASE_SERVICE_ROLE_KEY não encontrada nas variáveis de ambiente do Vercel.' 
-    }, { status: 500 });
+  if (!supabaseUrl) {
+    return NextResponse.json({ error: 'Erro de Configuração: NEXT_PUBLIC_SUPABASE_URL não encontrada.' }, { status: 500 });
+  }
+  if (!supabaseServiceKey) {
+    return NextResponse.json({ error: 'Erro de Configuração: SUPABASE_SERVICE_ROLE_KEY não encontrada no Vercel.' }, { status: 500 });
   }
 
   try {
