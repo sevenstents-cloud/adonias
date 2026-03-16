@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SlideOver } from '@/components/ui/SlideOver';
-import { Search, Plus, Filter, Download } from 'lucide-react';
+import { Search, Plus, Filter, Download, Pencil, Trash2 } from 'lucide-react';
 
 
 export default function LancamentosPage() {
@@ -29,12 +29,13 @@ export default function LancamentosPage() {
     cost_center_id: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const fetchTransacoes = async () => {
     const { data: transData } = await supabase
       .from('transactions')
       .select(`
-        id, description, amount, type, status, due_date,
+        id, description, amount, type, status, due_date, category_id, cost_center_id,
         categories (name),
         cost_centers (name)
       `)
@@ -42,7 +43,7 @@ export default function LancamentosPage() {
 
     if (transData) {
       const formatted = transData.map(t => ({
-        id: t.id,
+        ...t,
         descricao: t.description,
         categoria: t.categories?.name || 'Sem categoria',
         grupo: t.cost_centers?.name || '-',
@@ -78,19 +79,48 @@ export default function LancamentosPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleEdit = (t) => {
+    setEditingId(t.id);
+    setFormData({
+      type: t.type,
+      description: t.description,
+      amount: t.amount,
+      due_date: t.due_date,
+      category_id: t.category_id,
+      cost_center_id: t.cost_center_id
+    });
+    setSlideOpen(true);
+  };
+
+  const handleDelete = async (id, desc) => {
+    if (!confirm(`Deseja excluir o lançamento "${desc}"?`)) return;
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (error) alert('Erro ao excluir: ' + error.message);
+    else await fetchTransacoes();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return alert('Você precisa estar logado para salvar.');
     
     setSubmitting(true);
-    const { error } = await supabase.from('transactions').insert([{
-      ...formData,
-      amount: parseFloat(formData.amount),
-      created_by: user.id
-    }]);
+    
+    let res;
+    if (editingId) {
+      res = await supabase.from('transactions').update({
+        ...formData,
+        amount: parseFloat(formData.amount)
+      }).eq('id', editingId);
+    } else {
+      res = await supabase.from('transactions').insert([{
+        ...formData,
+        amount: parseFloat(formData.amount),
+        created_by: user.id
+      }]);
+    }
 
-    if (error) {
-      alert('Erro ao salvar lançamento: ' + error.message);
+    if (res.error) {
+      alert('Erro ao salvar lançamento: ' + res.error.message);
     } else {
       setFormData({
         type: 'DESPESA',
@@ -100,6 +130,7 @@ export default function LancamentosPage() {
         category_id: '',
         cost_center_id: ''
       });
+      setEditingId(null);
       setSlideOpen(false);
       await fetchTransacoes();
     }
@@ -118,7 +149,7 @@ export default function LancamentosPage() {
             <Download className="h-4 w-4" />
             Exportar
           </Button>
-          <Button onClick={() => setSlideOpen(true)} className="flex items-center gap-2">
+            <Button onClick={() => { setEditingId(null); setFormData({ type: 'DESPESA', description: '', amount: '', due_date: '', category_id: '', cost_center_id: '' }); setSlideOpen(true); }} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Novo Lançamento
           </Button>
@@ -170,6 +201,7 @@ export default function LancamentosPage() {
                   <th className="px-6 py-4 font-medium">Grupo / Projeto</th>
                   <th className="px-6 py-4 font-medium text-center">Status</th>
                   <th className="px-6 py-4 font-medium text-right">Valor</th>
+                  <th className="px-6 py-4 font-medium text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -192,6 +224,16 @@ export default function LancamentosPage() {
                     <td className={`px-6 py-4 text-right font-medium whitespace-nowrap ${t.tipo === 'receita' ? 'text-emerald-600' : 'text-slate-900'}`}>
                       {t.tipo === 'receita' ? '+' : '-'} R$ {t.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button onClick={() => handleEdit(t)} className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Editar">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => handleDelete(t.id, t.descricao)} className="p-1 text-slate-400 hover:text-red-600 transition-colors" title="Excluir">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -202,8 +244,8 @@ export default function LancamentosPage() {
 
       <SlideOver
         isOpen={slideOpen}
-        onClose={() => setSlideOpen(false)}
-        title="Novo Lançamento Financeiro"
+        onClose={() => { setSlideOpen(false); setEditingId(null); }}
+        title={editingId ? "Editar Lançamento" : "Novo Lançamento Financeiro"}
       >
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
