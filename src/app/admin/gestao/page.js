@@ -55,8 +55,8 @@ function InlineForm({ fields, onSave, onCancel, initialValues = {} }) {
 // CATEGORIAS
 // ─────────────────────────────────────────────
 function CategoriasTab() {
-  const { role } = useAuth();
-  const canEdit = role === 'ADMIN' || role === 'FINANCEIRO';
+  const { user } = useAuth();
+  const canEdit = !!user; // Qualquer usuário logado pode gerenciar categorias no app pessoal
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -81,7 +81,7 @@ function CategoriasTab() {
         type: values.type,
         description: values.description || null,
       }).eq('id', editingId);
-      if (err) { setError(err.message); return; }
+      if (err) { setError(`Erro ao atualizar: ${err.message}`); return; }
       setEditingId(null);
     } else {
       const { error: err } = await supabase.from('categories').insert({
@@ -89,7 +89,7 @@ function CategoriasTab() {
         type: values.type || 'DESPESA',
         description: values.description || null,
       });
-      if (err) { setError(err.message); return; }
+      if (err) { setError(`Erro ao inserir: ${err.message}`); return; }
       setShowAdd(false);
     }
     fetchCategorias();
@@ -188,8 +188,8 @@ function CategoriasTab() {
 // GRUPOS DE GASTOS (Antigos Centros de Custo)
 // ─────────────────────────────────────────────
 function GruposTab() {
-  const { role } = useAuth();
-  const canEdit = role === 'ADMIN' || role === 'FINANCEIRO';
+  const { user } = useAuth();
+  const canEdit = !!user; // Qualquer usuário logado pode gerenciar grupos no app pessoal
   const [centros, setCentros] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -215,7 +215,7 @@ function GruposTab() {
         description: values.description || null,
         is_active: values.is_active !== false,
       }).eq('id', editingId);
-      if (err) { setError(err.message); return; }
+      if (err) { setError(`Erro ao atualizar: ${err.message}`); return; }
       setEditingId(null);
     } else {
       const { error: err } = await supabase.from('cost_centers').insert({
@@ -224,7 +224,7 @@ function GruposTab() {
         description: values.description || null,
         is_active: true,
       });
-      if (err) { setError(err.message); return; }
+      if (err) { setError(`Erro ao inserir: ${err.message}`); return; }
       setShowAdd(false);
     }
     fetchCentros();
