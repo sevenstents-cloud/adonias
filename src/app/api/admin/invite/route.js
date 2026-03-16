@@ -1,10 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 export async function POST(req) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return NextResponse.json({ 
+      error: 'Configuração do servidor incompleta: SUPABASE_SERVICE_ROLE_KEY não encontrada nas variáveis de ambiente do Vercel.' 
+    }, { status: 500 });
+  }
+
   try {
     const { email, role, full_name } = await req.json();
 
