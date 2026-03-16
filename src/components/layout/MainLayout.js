@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/Button';
 
 export function MainLayout({ children }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === '/login';
+  const isPublicPage = pathname === '/login' || pathname.startsWith('/auth/');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  if (isLoginPage) {
+  if (isPublicPage) {
     return <>{children}</>;
   }
 
