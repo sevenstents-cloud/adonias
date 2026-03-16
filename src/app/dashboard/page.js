@@ -31,15 +31,25 @@ export default function DashboardPage() {
 
       if (txMes) {
         const receitas = txMes
-          .filter(t => t.type === 'RECEITA' && (t.status === 'RECEBIDO' || t.status === 'PAGO'))
+          .filter(t => t.type === 'RECEITA' && t.status !== 'CANCELADO')
           .reduce((a, t) => a + Number(t.amount), 0);
         const despesas = txMes
-          .filter(t => t.type === 'DESPESA' && (t.status === 'PAGO' || t.status === 'RECEBIDO'))
+          .filter(t => t.type === 'DESPESA' && t.status !== 'CANCELADO')
           .reduce((a, t) => a + Number(t.amount), 0);
-        const aReceber = txMes
+        
+        // A Receber/Pagar (apenas o que está PENDENTE e é do tipo DESPESA ou RECEITA)
+        const pendentes = txMes
           .filter(t => t.status === 'PENDENTE')
-          .reduce((a, t) => a + Number(t.amount), 0);
-        setTotais({ saldo: receitas - despesas, receitasMes: receitas, despesasMes: despesas, aReceber });
+          .reduce((a, t) => {
+            return t.type === 'RECEITA' ? a + Number(t.amount) : a - Number(t.amount);
+          }, 0);
+
+        setTotais({ 
+          saldo: receitas - despesas, 
+          receitasMes: receitas, 
+          despesasMes: despesas, 
+          aReceber: pendentes 
+        });
       }
 
       // Próximos vencimentos
@@ -96,7 +106,7 @@ export default function DashboardPage() {
             <div className={`text-2xl font-bold ${totais.saldo >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               R$ {fmt(totais.saldo)}
             </div>
-            <p className="text-xs text-slate-500">Receitas – Despesas pagas</p>
+            <p className="text-xs text-slate-500">Saldo previsto (Receitas - Gastos)</p>
           </CardContent>
         </Card>
 
@@ -107,7 +117,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">R$ {fmt(totais.receitasMes)}</div>
-            <p className="text-xs text-slate-500">Total recebido no mês</p>
+            <p className="text-xs text-slate-500">Total previsto p/ o mês</p>
           </CardContent>
         </Card>
 
@@ -118,7 +128,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">R$ {fmt(totais.despesasMes)}</div>
-            <p className="text-xs text-slate-500">Total pago no mês</p>
+            <p className="text-xs text-slate-500">Total previsto p/ o mês</p>
           </CardContent>
         </Card>
 
@@ -128,8 +138,10 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">R$ {fmt(totais.aReceber)}</div>
-            <p className="text-xs text-slate-500">Lançamentos pendentes</p>
+            <div className={`text-2xl font-bold ${totais.aReceber >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+              R$ {fmt(Math.abs(totais.aReceber))}
+            </div>
+            <p className="text-xs text-slate-500">{totais.aReceber >= 0 ? 'Líquido pendente p/ receber' : 'Líquido pendente p/ pagar'}</p>
           </CardContent>
         </Card>
       </div>

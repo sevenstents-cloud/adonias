@@ -26,7 +26,8 @@ export default function LancamentosPage() {
     amount: '',
     due_date: '',
     category_id: '',
-    cost_center_id: ''
+    cost_center_id: '',
+    status: 'PENDENTE'
   });
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -87,7 +88,8 @@ export default function LancamentosPage() {
       amount: t.amount,
       due_date: t.due_date,
       category_id: t.category_id,
-      cost_center_id: t.cost_center_id
+      cost_center_id: t.cost_center_id,
+      status: t.status
     });
     setSlideOpen(true);
   };
@@ -128,7 +130,8 @@ export default function LancamentosPage() {
         amount: '',
         due_date: '',
         category_id: '',
-        cost_center_id: ''
+        cost_center_id: '',
+        status: 'PENDENTE'
       });
       setEditingId(null);
       setSlideOpen(false);
@@ -149,7 +152,7 @@ export default function LancamentosPage() {
             <Download className="h-4 w-4" />
             Exportar
           </Button>
-            <Button onClick={() => { setEditingId(null); setFormData({ type: 'DESPESA', description: '', amount: '', due_date: '', category_id: '', cost_center_id: '' }); setSlideOpen(true); }} className="flex items-center gap-2">
+          <Button onClick={() => { setEditingId(null); setFormData({ type: 'DESPESA', description: '', amount: '', due_date: '', category_id: '', cost_center_id: '', status: 'PENDENTE' }); setSlideOpen(true); }} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Novo Lançamento
           </Button>
@@ -295,6 +298,16 @@ export default function LancamentosPage() {
               {centrosCusto.map(cc => (
                 <option key={cc.id} value={cc.id}>{cc.name}</option>
               ))}
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Status</label>
+            <Select required name="status" value={formData.status} onChange={handleChange}>
+              <option value="PENDENTE">Pendente</option>
+              <option value="PAGO">Pago</option>
+              <option value="RECEBIDO">Recebido</option>
+              <option value="CANCELADO">Cancelado</option>
             </Select>
           </div>
           
