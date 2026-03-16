@@ -16,6 +16,13 @@ export async function POST(req) {
     }, { status: 500 });
   }
 
+  // Verificação de segurança: Comparar com a Anon Key
+  if (supabaseServiceKey === process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()) {
+    return NextResponse.json({ 
+      error: 'A chave de serviço é IDÊNTICA à anon key. Você deve usar a SERVICE_ROLE_KEY (Chave Secreta) para esta função. Verifique as variáveis no Vercel.' 
+    }, { status: 500 });
+  }
+
   try {
     const { email, role, full_name } = await req.json();
 
