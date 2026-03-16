@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -13,9 +14,10 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, DollarSign, Wallet } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, DollarSign, Wallet, Plus } from 'lucide-react';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [data, setData] = useState([]);
   const [contas, setContas] = useState([]);
   const [totais, setTotais] = useState({
@@ -27,7 +29,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchDashboard() {
-      // Busca próximos vencimentos (Pendente)
       const { data: transData } = await supabase
         .from('transactions')
         .select('id, description, amount, type, due_date, status')
@@ -40,14 +41,13 @@ export default function DashboardPage() {
           id: t.id,
           descricao: t.description,
           valor: t.amount,
-          data: t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR') : '',
+          data: t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '',
           tipo: t.type?.toLowerCase() || 'despesa'
         })));
       } else {
         setContas([]);
       }
       
-      // Gráfico de fluxo e totais iniciam zerados (precisariam de uma agregação complexa aqui ou via RPC no Supabase)
       setData([
         { name: 'Out', receitas: 0, despesas: 0 },
         { name: 'Nov', receitas: 0, despesas: 0 },
@@ -56,16 +56,12 @@ export default function DashboardPage() {
         { name: 'Fev', receitas: 0, despesas: 0 },
         { name: 'Mar', receitas: 0, despesas: 0 },
       ]);
-      
-      setTotais({
-        saldo: 0,
-        receitasMes: 0,
-        despesasMes: 0,
-        aReceber: 0
-      });
     }
     fetchDashboard();
   }, []);
+
+  const handleNovoLancamento = () => router.push('/lancamentos');
+  const handleVerTodos = () => router.push('/lancamentos');
 
   return (
     <div className="space-y-8">
@@ -74,7 +70,10 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
           <p className="text-slate-500 mt-1">Visão geral do fluxo de caixa e saúde financeira.</p>
         </div>
-        <Button>Novo Lançamento</Button>
+        <Button onClick={handleNovoLancamento} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Novo Lançamento
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -189,8 +188,8 @@ export default function DashboardPage() {
               )}
             </div>
             
-            <Button variant="outline" className="w-full mt-6">
-              Ver Todos
+            <Button variant="outline" className="w-full mt-6" onClick={handleVerTodos}>
+              Ver Todos os Lançamentos
             </Button>
           </CardContent>
         </Card>
