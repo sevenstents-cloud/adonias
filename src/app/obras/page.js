@@ -3,39 +3,112 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { SlideOver } from '@/components/ui/SlideOver';
 import { Briefcase, Search, Plus } from 'lucide-react';
 
 export default function ObrasPage() {
+  const { user } = useAuth();
   const [obras, setObras] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [slideOpen, setSlideOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    nome: '',
+    client_name: '',
+    contract_value: '',
+    start_date: '',
+    expected_end_date: ''
+  });
+
+  const fetchObras = async () => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        id, client_name, start_date, status, contract_value,
+        cost_centers (name)
+      `);
+      
+    if (!error && data) {
+      const formatted = data.map(p => ({
+        id: p.id,
+        nome: p.cost_centers?.name || 'Obra sem nome',
+        cliente: p.client_name,
+        dataInicio: p.start_date ? new Date(p.start_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '-',
+        status: p.status === 'EM_ANDAMENTO' ? 'Em Andamento' : p.status,
+        valor: p.contract_value || 0
+      }));
+      setObras(formatted);
+    }
+  };
 
   useEffect(() => {
-    async function fetchObras() {
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
-          id, client_name, start_date, status, contract_value,
-          cost_centers (name)
-        `);
-        
-      if (!error && data) {
-        const formatted = data.map(p => ({
-          id: p.id,
-          nome: p.cost_centers?.name || 'Obra sem nome',
-          cliente: p.client_name,
-          dataInicio: p.start_date ? new Date(p.start_date).toLocaleDateString('pt-BR') : '-',
-          status: p.status === 'EM_ANDAMENTO' ? 'Em Andamento' : p.status,
-          valor: p.contract_value || 0
-        }));
-        setObras(formatted);
-      }
+    async function loadData() {
+      await fetchObras();
       setLoading(false);
     }
-    fetchObras();
+    loadData();
   }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) return alert('Você precisa estar logado para salvar.');
+    
+    setSubmitting(true);
+    
+    // 1. Create cost_center
+    const { data: ccData, error: ccError } = await supabase
+      .from('cost_centers')
+      .insert([{
+        name: formData.nome,
+        type: 'OBRA',
+        description: `Centro de custo da obra: ${formData.nome}`
+      }])
+      .select('id')
+      .single();
+      
+    if (ccError) {
+      alert('Erro ao criar centro de custo: ' + ccError.message);
+      setSubmitting(false);
+      return;
+    }
+    
+    // 2. Create project
+    const { error: projError } = await supabase
+      .from('projects')
+      .insert([{
+        cost_center_id: ccData.id,
+        client_name: formData.client_name,
+        contract_value: parseFloat(formData.contract_value || 0),
+        start_date: formData.start_date || null,
+        expected_end_date: formData.expected_end_date || null,
+        status: 'EM_ANDAMENTO'
+      }]);
+      
+    if (projError) {
+      alert('Erro ao criar obra: ' + projError.message);
+    } else {
+      setFormData({
+        nome: '',
+        client_name: '',
+        contract_value: '',
+        start_date: '',
+        expected_end_date: ''
+      });
+      setSlideOpen(false);
+      await fetchObras();
+    }
+    setSubmitting(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -44,7 +117,7 @@ export default function ObrasPage() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Obras e Projetos</h1>
           <p className="text-slate-500 mt-1">Gerencie os centros de custo e acompanhe a rentabilidade de cada obra.</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2" onClick={() => setSlideOpen(true)}>
           <Plus className="h-4 w-4" />
           Nova Obra
         </Button>
@@ -123,6 +196,49 @@ export default function ObrasPage() {
           </div>
         </CardContent>
       </Card>
+
+      <SlideOver
+        isOpen={slideOpen}
+        onClose={() => setSlideOpen(false)}
+        title="Nova Obra"
+      >
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Nome da Obra</label>
+            <Input required name="nome" value={formData.nome} onChange={handleChange} placeholder="Ex: Edifício Central" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Cliente</label>
+            <Input required name="client_name" value={formData.client_name} onChange={handleChange} placeholder="Ex: Construtora ABC" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Valor do Contrato (R$)</label>
+            <Input required type="number" step="0.01" name="contract_value" value={formData.contract_value} onChange={handleChange} placeholder="0.00" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Data de Início</label>
+              <Input type="date" name="start_date" value={formData.start_date} onChange={handleChange} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Previsão Fim</label>
+              <Input type="date" name="expected_end_date" value={formData.expected_end_date} onChange={handleChange} />
+            </div>
+          </div>
+          
+          <div className="pt-6 border-t border-slate-200 flex justify-end gap-3">
+            <Button variant="outline" type="button" onClick={() => setSlideOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Salvando...' : 'Salvar Obra'}
+            </Button>
+          </div>
+        </form>
+      </SlideOver>
     </div>
   );
 }

@@ -8,7 +8,8 @@ import {
   Briefcase, 
   Wallet, 
   Settings, 
-  LogOut 
+  LogOut,
+  Users
 } from 'lucide-react';
 import { cn } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,12 +18,13 @@ const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Obras & Projetos', href: '/obras', icon: Briefcase },
   { name: 'Lançamentos', href: '/lancamentos', icon: Wallet },
+  { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { signOut, role } = useAuth();
 
   return (
     <div className="flex h-full w-64 flex-col bg-slate-50 border-r border-slate-200">
@@ -34,6 +36,7 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-3">
           {navItems.map((item) => {
+            if (item.href === '/admin/users' && role !== 'ADMIN') return null;
             const isActive = pathname.startsWith(item.href);
             return (
               <Link

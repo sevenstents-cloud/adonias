@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,39 +12,54 @@ import { Search, Plus, Filter, Download } from 'lucide-react';
 
 
 export default function LancamentosPage() {
+  const { user } = useAuth();
   const [slideOpen, setSlideOpen] = useState(false);
   const [transacoes, setTransacoes] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [centrosCusto, setCentrosCusto] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Form State
+  const [formData, setFormData] = useState({
+    tipo: 'DESPESA',
+    description: '',
+    amount: '',
+    due_date: '',
+    category_id: '',
+    cost_center_id: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchTransacoes = async () => {
+    const { data: transData } = await supabase
+      .from('transactions')
+      .select(`
+        id, description, amount, type, status, due_date,
+        categories (name),
+        cost_centers (name)
+      `)
+      .order('due_date', { ascending: false });
+
+    if (transData) {
+      const formatted = transData.map(t => ({
+        id: t.id,
+        descricao: t.description,
+        categoria: t.categories?.name || 'Sem categoria',
+        obra: t.cost_centers?.name || '-',
+        tipo: t.type?.toLowerCase() || 'despesa',
+        valor: t.amount,
+        data: t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR') : '-',
+        status: t.status === 'PENDENTE' ? 'Pendente' : 
+                t.status === 'PAGO' ? 'Pago' : 
+                t.status === 'RECEBIDO' ? 'Recebido' : 'Cancelado'
+      }));
+      setTransacoes(formatted);
+    }
+  };
+
   useEffect(() => {
     async function fetchData() {
-      // Transacoes
-      const { data: transData } = await supabase
-        .from('transactions')
-        .select(`
-          id, description, amount, type, status, due_date,
-          categories (name),
-          cost_centers (name)
-        `)
-        .order('due_date', { ascending: false });
-
-      if (transData) {
-        const formatted = transData.map(t => ({
-          id: t.id,
-          descricao: t.description,
-          categoria: t.categories?.name || 'Sem categoria',
-          obra: t.cost_centers?.name || '-',
-          tipo: t.type?.toLowerCase() || 'despesa',
-          valor: t.amount,
-          data: t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR') : '-',
-          status: t.status === 'PENDENTE' ? 'Pendente' : 
-                  t.status === 'PAGO' ? 'Pago' : 
-                  t.status === 'RECEBIDO' ? 'Recebido' : 'Cancelado'
-        }));
-        setTransacoes(formatted);
-      }
+      await fetchTransacoes();
 
       // Form lookups
       const { data: catData } = await supabase.from('categories').select('id, name');
@@ -56,6 +72,39 @@ export default function LancamentosPage() {
     }
     fetchData();
   }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) return alert('Você precisa estar logado para salvar.');
+    
+    setSubmitting(true);
+    const { error } = await supabase.from('transactions').insert([{
+      ...formData,
+      amount: parseFloat(formData.amount),
+      created_by: user.id
+    }]);
+
+    if (error) {
+      alert('Erro ao salvar lançamento: ' + error.message);
+    } else {
+      setFormData({
+        tipo: 'DESPESA',
+        description: '',
+        amount: '',
+        due_date: '',
+        category_id: '',
+        cost_center_id: ''
+      });
+      setSlideOpen(false);
+      await fetchTransacoes();
+    }
+    setSubmitting(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -156,16 +205,16 @@ export default function LancamentosPage() {
         onClose={() => setSlideOpen(false)}
         title="Novo Lançamento Financeiro"
       >
-        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); setSlideOpen(false); }}>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Tipo de Lançamento</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2">
-                <input type="radio" name="tipo" value="receita" className="text-blue-600" />
+                <input type="radio" name="tipo" value="RECEITA" checked={formData.tipo === 'RECEITA'} onChange={handleChange} className="text-blue-600" />
                 <span className="text-sm">Receita</span>
               </label>
               <label className="flex items-center gap-2">
-                <input type="radio" name="tipo" value="despesa" defaultChecked className="text-blue-600" />
+                <input type="radio" name="tipo" value="DESPESA" checked={formData.tipo === 'DESPESA'} onChange={handleChange} className="text-blue-600" />
                 <span className="text-sm">Despesa</span>
               </label>
             </div>
@@ -173,23 +222,23 @@ export default function LancamentosPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Descrição</label>
-            <Input required placeholder="Ex: Compra de Vidros Temperados" />
+            <Input required name="description" value={formData.description} onChange={handleChange} placeholder="Ex: Compra de Vidros Temperados" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Valor (R$)</label>
-              <Input required type="number" step="0.01" placeholder="0,00" />
+              <Input required type="number" name="amount" value={formData.amount} onChange={handleChange} step="0.01" placeholder="0.00" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Data de Vencimento</label>
-              <Input required type="date" />
+              <Input required type="date" name="due_date" value={formData.due_date} onChange={handleChange} />
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Categoria</label>
-            <Select required>
+            <Select required name="category_id" value={formData.category_id} onChange={handleChange}>
               <option value="">Selecione uma categoria...</option>
               {categorias.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -199,7 +248,7 @@ export default function LancamentosPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Obra / Centro de Custo</label>
-            <Select required>
+            <Select required name="cost_center_id" value={formData.cost_center_id} onChange={handleChange}>
               <option value="">Selecione um centro de custo...</option>
               {centrosCusto.map(cc => (
                 <option key={cc.id} value={cc.id}>{cc.name}</option>
@@ -211,8 +260,8 @@ export default function LancamentosPage() {
             <Button variant="outline" type="button" onClick={() => setSlideOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Salvar Lançamento
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Salvando...' : 'Salvar Lançamento'}
             </Button>
           </div>
         </form>
