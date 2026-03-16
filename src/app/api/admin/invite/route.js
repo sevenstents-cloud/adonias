@@ -5,19 +5,19 @@ export async function POST(req) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-  if (!supabaseUrl) {
-    return NextResponse.json({ error: 'Erro de Configuração: NEXT_PUBLIC_SUPABASE_URL não encontrada.' }, { status: 500 });
-  }
-  if (!supabaseServiceKey) {
-    return NextResponse.json({ error: 'Erro de Configuração: SUPABASE_SERVICE_ROLE_KEY não encontrada no Vercel.' }, { status: 500 });
+  // Diagnóstico de presença
+  if (!supabaseUrl) return NextResponse.json({ error: 'NEXT_PUBLIC_SUPABASE_URL ausente.' }, { status: 500 });
+  if (!supabaseServiceKey) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY ausente no Vercel.' }, { status: 500 });
+
+  // Diagnóstico de Formato (Service Key deve ser um JWT começando com eyJ)
+  if (!supabaseServiceKey.startsWith('eyJ')) {
+    return NextResponse.json({ 
+      error: 'A chave SUPABASE_SERVICE_ROLE_KEY parece inválida (não começa com eyJ). Verifique se você não colou a Anon Key por engano.' 
+    }, { status: 500 });
   }
 
   try {
     const { email, role, full_name } = await req.json();
-
-    if (!email || !role) {
-      return NextResponse.json({ error: 'Email e Role são obrigatórios.' }, { status:400 });
-    }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
@@ -26,12 +26,17 @@ export async function POST(req) {
       }
     });
 
-    // 1. Convidar usuário via Supabase Auth
+    // 1. Convidar usuário
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { full_name, role } // Metadados iniciais
+      data: { full_name, role }
     });
 
-    if (inviteError) throw inviteError;
+    if (inviteError) {
+      console.error('Erro Supabase Invite:', inviteError);
+      return NextResponse.json({ 
+        error: `Erro do Supabase API: ${inviteError.message} (Status: ${inviteError.status})` 
+      }, { status: inviteError.status || 500 });
+    }
 
     // 2. Garantir que o perfil seja criado (o trigger pode fazer isso, mas vamos reforçar ou atualizar)
     // O id vem de inviteData.user.id
