@@ -21,7 +21,7 @@ export default function LancamentosPage() {
 
   // Form State
   const [formData, setFormData] = useState({
-    tipo: 'DESPESA',
+    type: 'DESPESA',
     description: '',
     amount: '',
     due_date: '',
@@ -93,7 +93,7 @@ export default function LancamentosPage() {
       alert('Erro ao salvar lançamento: ' + error.message);
     } else {
       setFormData({
-        tipo: 'DESPESA',
+        type: 'DESPESA',
         description: '',
         amount: '',
         due_date: '',
@@ -210,11 +210,11 @@ export default function LancamentosPage() {
             <label className="text-sm font-medium text-slate-700">Tipo de Lançamento</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2">
-                <input type="radio" name="tipo" value="RECEITA" checked={formData.tipo === 'RECEITA'} onChange={handleChange} className="text-blue-600" />
+                <input type="radio" name="type" value="RECEITA" checked={formData.type === 'RECEITA'} onChange={handleChange} className="text-blue-600" />
                 <span className="text-sm">Receita</span>
               </label>
               <label className="flex items-center gap-2">
-                <input type="radio" name="tipo" value="DESPESA" checked={formData.tipo === 'DESPESA'} onChange={handleChange} className="text-blue-600" />
+                <input type="radio" name="type" value="DESPESA" checked={formData.type === 'DESPESA'} onChange={handleChange} className="text-blue-600" />
                 <span className="text-sm">Despesa</span>
               </label>
             </div>
